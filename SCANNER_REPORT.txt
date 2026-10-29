@@ -1,0 +1,193 @@
+RISE SCANNER — MIGRATION & FALLBACK REPORT
+==========================================
+Date: 2026-10-29
+
+PART 1 — WHAT THE SCANNER IS
+============================
+An alarm-clock verification step: the camera (getUserMedia) looks for an everyday
+object (cup, book, toothbrush, bottle, chair, ...) and only lets you dismiss the
+alarm after ~3 confirmed detections out of 5 inference passes
+(ConfirmationTracker, src/utils/detectionTracker.ts — unchanged behaviour).
+
+PART 2 — MIGRATION: TF.js COCO-SSD  ->  YOLO26n + ONNX Runtime Web
+==================================================================
+Old: @tensorflow/tfjs + @tensorflow-models/coco-ssd (lite_mobilenet_v2, 300x300,
+     ~0.55 GFLOPs), person-visible "float16" quirks on some GPUs, 250ms+ pass
+     scheduling -> felt slow/buggy on phones.
+
+New: YOLO26n (Ultralytics, Jan 2026) exported directly by us from the official
+     yolo26n.pt checkpoint:
+       - asset: public/models/yolo26n/model.onnx (~9.5MB)
+       - input:  [1,3,640,640] float32, letterboxed RGB /255
+       - output: [1,300,6] = x1,y1,x2,y2,confidence,class_id
+       - END-TO-END NMS-FREE export (nms=False one-to-one head):
+         the model itself returns one box per object, so we deliberately run
+         NO runtime NMS (requirement: no duplicate NMS).
+     Runtime: onnxruntime-web 1.31.1, wasm + jsep artifacts SELF-HOSTED in
+     public/ort/ (no CDN). Decoder/preprocess: src/utils/yoloDecode.ts (unit
+     tested) + YoloDetector in src/services/objectDetection.ts.
+
+Why the old one was slow/buggy (root causes):
+  - inference on the full 640x480 frame + fixed 250ms pause = ~1.5s/pass
+  - COCO-SSD box jitter on small objects + strict per-class streak
+  - float16-precision issues on some GPU drivers
+Fixes carried into the new stack: pass gap lowered to 100ms (passes never
+overlap anyway), downscale-free letterbox pipeline, NMS-free decoding.
+
+Verified during migration:
+  - official export confirmed: input [1,3,640,640], output [1,300,6]
+  - real inference check (Bus.jpg): bus 0.92, person 0.91 x2, person 0.84,
+    person 0.59, pixel coords, exactly one box per object, no duplicates.
+  - 28 unit tests incl. decoder (pixel + normalized coords, clipping,
+    degenerate boxes, class-index bounds, maxDetections cap).
+
+PART 3 — FALLBACK SYSTEM (this session)
+=======================================
+Priority ladder (src/utils/detectorFallback.ts + src/services/objectDetection.ts):
+  1. YOLO26n on WebGPU   2. YOLO26n on WASM SIMD
+  3. COCO-SSD on WebGL   4. COCO-SSD on CPU (TensorFlow.js re-added)
+
+Behaviour:
+  - A tier must survive a REAL test inference (warmUp) to be selected;
+    navigator.gpu existing is not trusted on its own.
+  - Runtime failures (WebGPU init, GPU device loss, unsupported ops,
+    OOM, model execution errors) count as consecutive errors; after 2,
+    the broken tier is DISPOSED (session.release()/model dispose) and the
+    roster moves on automatically. No duplicate camera streams, ever —
+    reuseCamera/useCamera untouched.
+  - Latency watchdog: if the first 3 passes of a tier average > 3000ms,
+    that tier is judged too slow and the roster escalates as well.
+  - Anti-flap: a failed tier gets a 30s cooldown; once every tier is
+    cooling down the roster reports exhaustion instead of looping.
+  - Only when ALL backends have failed does the user see a hard error —
+    and even then the alarm keeps ringing with the emergency-math
+    fallback still available (alarm is never dismissed by a crash).
+  - Unified Detection interface (class, score, bbox, timestamp, model,
+    backend) regardless of producer; OBJECT_OPTIONS & confirmation
+    logic unchanged; camera stays 640x480 single stream; one inference
+    at a time (busy flag) with 100ms breathing room.
+
+Diagnostics (bug icon in scanner, dev aid only): MODEL (active tier id),
+BACKEND, AVG/FPS, INFERENCE + lastMs, LAST, fallback reason, last errors,
+boxes overlay, backend switch button (now WebGPU/WASM).
+
+PART 4 — TESTS & CHECKS
+=======================
+  npx tsc --noEmit               -> clean
+  npx vitest run                 -> 42/42 passed (4 files)
+    detectorFallback.test.ts     10 scenarios:
+      webgpu unavailable / init failure / wasm failure / coco fallback /
+      last-tier (coco cpu) / total failure null / GPU device loss escape /
+      slow-watchdog escalation / no-escalation when fast / cooldown
+      anti-loop + recovery / latency stats
+    useCamera.test.ts            permission denial, busy, missing, unknown
+    yoloDecode.test.ts           decoder correctness (5)
+    logic.test.ts                alarm/session logic (23)
+  npx vite build                 -> OK; sw.js caches /models/ + /ort/
+     first-load runtime (CacheFirst) so scanning works offline after that.
+
+PART 5 — LICENSE (must read before shipping)
+============================================
+  Ultralytics YOLO26n weights/code: AGPL-3.0 (+ paid Ultralytics Enterprise option).
+  Consequence for a distributed app: either open-source the substantial
+  interacting parts under AGPL-3.0, or buy an Ultralytics enterprise license,
+  or swap the model for an Apache/MIT-licensed detector (e.g. YOLOX, RT-DETR).
+  ONNX Runtime Web: MIT — no issue. TF.js/COCO-SSD (previously used, now the
+  fallback tiers): Apache-2.0 — no issue.
+
+PART 6 — REMAINING DEVICE TESTING (needs a human)
+=================================================
+  Not runnable from this machine: live per-pass latency (WebGPU vs WASM),
+  camera interruption during an alarm, and the checklist:
+  cups, books, toothbrushes, bottles, chairs, bowls, phones.
+  Suggested flow: npm run dev (HTTPS=1 npm run dev for a phone on LAN),
+  Settings -> Test camera scan per object; watch the debug panel's
+  AVG/FPS + BACKEND row to confirm the expected tier engaged.
+
+FILES TOUCHED
+=============
+  src/services/objectDetection.ts   YOLO sessions + tier orchestration
+  src/services/cocoDetection.ts     NEW: COCO-SSD tiers 3/4 adapter
+  src/utils/yoloDecode.ts           NEW: e2e output decoder + COCO labels
+  src/utils/detectorFallback.ts     NEW: pure fallback policy + roster
+  src/hooks/useObjectDetection.ts   new detector API + diagnostics + exhausted-error
+  src/hooks/useCamera.ts            classify() exported for tests
+  src/components/scanner/DebugPanel.tsx  new diagnostics rows
+  src/components/scanner/ObjectScanner.tsx backend-switch labels
+  src/constants.ts                  MODEL_URL/COCO_MODEL_URL/YOLO_INPUT_SIZE, pass gap 100ms
+  vite.config.ts                    cache /ort/, cache name v3
+  public/models/yolo26n/  public/ort/                    NEW assets (self-hosted)
+  public/models/coco-ssd/           restored fallback assets
+  tests: yoloDecode.test.ts, detectorFallback.test.ts, useCamera.test.ts (NEW)
+
+RELIABILITY REVIEW (round 2, this session)
+==========================================
+Scope: the 10 remaining reliability concerns. Existing implementation preserved;
+only targeted fixes were made.
+
+CONFIRMED FIXES (automated, verified by tests)
+---------------------------------------------
+1. Auto-recovery after total failure: when every backend exhausts and its 30s
+   cooldown expires, the scanner now retries WITHOUT user interaction
+   (hook schedules a restart at nextRecoverAt(); bounded: >=1 attempt per
+   interval, loops back into error state if all backends fail again).
+   Regression tests: cooldown expiry recovery + nextRecoverAt() reporting.
+2. Anti-stuck guarantee: roster cooldowns are time-based (not perma-latched);
+   after expiry start() retries the tier normally. Tested w/ fake timers.
+9. Race fix: concurrent loadDetector()/start() callers previously could load the
+   SAME tier twice -> duplicate GPU/wasm session leak. start() now shares one
+   in-flight promise. Regression test: 3 concurrent starts -> each tier.load()
+   called exactly once.
+8. Mid-scan backend switch now RESETS the partially built verification streak
+   (tracker.reset() + hits->0) — different models must not blend scores.
+7. Tracker per-frame rule VERIFIED with regression test: one frame containing
+   the same object N times contributes exactly ONE hit; 3-in-5 window still
+   confirms on the 3rd single-hit pass (window semantics).
+10. Alarm safety VERIFIED unchanged: scanner failure -> error phase only; alarm
+   dismisses solely via mission completion (sessionMachine); emergency-math
+   fallback remains offered (-- existing logic.test 'emergency fallback must be
+   solved before the scan mission completes'). Note: ALLOW_SKIP_MISSIONS=true in
+   constants.ts is a TEMPORARY testing aid and would bypass missions — flip to
+   false for production (pre-existing, not introduced by this review).
+6. Model class checks (still-image semi-automated, ONNX CPU):
+   book 0.53 / toothbrush 0.72 / bottle 0.49 / cup 0.94 (candid photo pair).
+   All four target classes fire above the 0.35 accept threshold on test photos.
+
+MEASURED DATA -> WATCHDOG RECALIBRATION (concern 3+4)
+-----------------------------------------------------
+Benchmark on this machine (python ORT, CPU 12 threads, letterbox 640x480->640):
+  inference  med 27ms (p90 29ms), preprocess med 2ms, decode ~0ms
+  complete pass ~30ms -> 7.7 passes/s @100ms gap; 3-of-5 hit-rate verification
+  completes ~0.5s after the first hit (desktop, optimistic upper bound).
+The previous flat 3000ms watchdog was too permissive for fast tiers and would
+also falsely punish a legitimately slow CPU tier. Now each tier has its OWN
+budget: webgpu 1500ms / yolo-wasm 3000ms / coco-webgl 1200ms / coco-cpu 2500ms.
+Rationale: even a lenient 3-of-5 pass sequence needs ~5 passes, so >3000ms/pass
+would exceed a 20s user-tolerable verify; phone wasm realistically 300-800ms.
+Reasonable, but phone numbers still to confirm on real devices (below).
+
+OFFLINE / PWA CHECK (concern 5, automated portion)
+--------------------------------------------------
+vite build -> dist/ contains: models/yolo26n/model.onnx, models/coco-ssd/*
+(5 shards + model.json), ort/*.wasm+.mjs. Service worker registers cache
+'rise-models-v3' with CacheFirst for paths starting /models/ or /ort/ and does
+not precache them (globIgnores models/**, ort/**). Automated part PASSED.
+NOT tested here: installing the PWA, airplane-mode reload, sw update flow.
+
+NOT PERFORMED — REAL-DEVICE TESTING REQUIRED (needs human, cannot run headless)
+-------------------------------------------------------------------------------
+- Live camera scans for cup/book/toothbrush/bottle on Chrome Android + Safari iOS
+  (image checks are NOT a substitute: lighting, motion blur, focus differ).
+- Real WebGPU pass latency on phone (budgets above are analytic extrapolation).
+- Offline: airplane-mode PWA reopen, model cache hit/miss, sw autoUpdate.
+- Camera interruption mid-scan (permission revocation, incoming call).
+- Battery/thermals over a 60s active scan.
+
+FILES TOUCHED THIS ROUND
+------------------------
+  src/utils/detectorFallback.ts     inflight dedupe, nextRecoverAt(), tier budgets
+  src/services/objectDetection.ts   budgetMs per tier + nextRecoverAt exposure
+  src/hooks/useObjectDetection.ts   tier-change streak reset, auto-retry after exhaustion
+  src/utils/logic.test.ts           per-frame count regression test
+  src/utils/detectorFallback.test.ts concurrency + budgets + recovery tests
+Suite after round 2: tsc clean, 45/45 vitest passing, vite build OK.
