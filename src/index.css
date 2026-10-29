@@ -1,0 +1,53 @@
+@import '@fontsource-variable/inter';
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --bg: 9 9 11;
+  --card: 24 24 27;
+  --elevated: 34 34 37;
+  --fg: 250 250 250;
+  --muted: 161 161 170;
+  --accent: 196 244 109;
+  --danger: 255 107 107;
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  color-scheme: dark;
+}
+
+* { -webkit-tap-highlight-color: transparent; }
+html, body, #root { height: 100%; }
+html { background: rgb(var(--bg)); overscroll-behavior: none; }
+body {
+  margin: 0;
+  background: rgb(var(--bg));
+  color: rgb(var(--fg));
+  font-family: 'Inter Variable', system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overflow-x: hidden;
+  touch-action: manipulation;
+  user-select: none;
+  -webkit-user-select: none;
+}
+input, textarea { user-select: text; -webkit-user-select: text; }
+button { font: inherit; color: inherit; }
+.tnum { font-variant-numeric: tabular-nums; font-feature-settings: 'tnum'; }
+.hairline { border: 1px solid rgba(255, 255, 255, 0.07); }
+.pb-safe { padding-bottom: max(var(--safe-bottom), 12px); }
+.pt-safe { padding-top: max(var(--safe-top), 12px); }
+.no-scrollbar { scrollbar-width: none; }
+.no-scrollbar::-webkit-scrollbar { display: none; }
+:focus-visible { outline: 2px solid rgb(var(--accent)); outline-offset: 2px; border-radius: 12px; }
+
+@keyframes shake { 0%,100% { transform: translateX(0); } 20% { transform: translateX(-10px); } 40% { transform: translateX(9px); } 60% { transform: translateX(-6px); } 80% { transform: translateX(4px); } }
+.shake { animation: shake 0.42s ease; }
+@keyframes scanline { 0% { top: 6%; } 100% { top: 94%; } }
+.scanline { animation: scanline 2.2s ease-in-out infinite alternate; }
+@keyframes ringpulse { 0% { transform: scale(0.85); opacity: 0.55; } 100% { transform: scale(1.5); opacity: 0; } }
+.ringpulse { animation: ringpulse 2.4s ease-out infinite; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.001ms !important; animation-iteration-count: 1 !important; transition-duration: 0.001ms !important; scroll-behavior: auto !important; }
+}
