@@ -28,7 +28,7 @@ export function CompletionPage() {
 
   return (
     <div className="absolute inset-0 z-[70] flex flex-col items-center overflow-hidden bg-bg px-6 pb-safe pt-safe text-center" role="dialog" aria-label="Alarm completed">
-      <div aria-hidden className="pointer-events-none absolute left-1/2 top-1/3 h-[480px] w-[480px] -translate-x-1/2 -translate-y-1/2 rounded-full" style={{ background: 'radial-gradient(circle, rgba(196,244,109,0.2), transparent 65%)' }} />
+      <div aria-hidden className="pointer-events-none absolute left-1/2 top-1/3 h-[480px] w-[480px] -translate-x-1/2 -translate-y-1/2 rounded-full" style={{ background: 'radial-gradient(circle, rgba(165,180,252,0.1), transparent 65%)' }} />
       {CONFETTI.map((p, i) => (
         <motion.span
           key={i}

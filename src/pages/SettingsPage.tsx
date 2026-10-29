@@ -110,8 +110,7 @@ export function SettingsPage() {
   return (
     <div className="px-5 pb-48 pt-safe">
       <header className="pt-5">
-        <p className="text-[12px] font-semibold tracking-[0.18em] text-accent">SETTINGS</p>
-        <h1 className="mt-2 mb-7 text-[34px] font-extrabold leading-tight tracking-tight">Make it yours.</h1>
+        <h1 className="mt-1 mb-7 text-[28px] font-bold leading-tight tracking-tight">Settings</h1>
       </header>
 
       <Section title="General">

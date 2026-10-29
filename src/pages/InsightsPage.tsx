@@ -29,8 +29,7 @@ export function InsightsPage() {
   return (
     <div className="px-5 pb-48 pt-safe">
       <header className="pt-5">
-        <p className="text-[12px] font-semibold tracking-[0.18em] text-accent">INSIGHTS</p>
-        <h1 className="mt-2 text-[34px] font-extrabold leading-tight tracking-tight">Your wake-up story.</h1>
+        <h1 className="mt-1 text-[28px] font-bold leading-tight tracking-tight">Your history</h1>
       </header>
 
       {ins.total === 0 && recent.length === 0 ? (
@@ -52,7 +51,7 @@ export function InsightsPage() {
           </div>
 
           <Card className="mt-4 p-5">
-            <p className="text-[12px] font-semibold uppercase tracking-[0.14em] text-muted">Last 7 days</p>
+            <p className="text-[13px] font-medium text-muted">Last 7 days</p>
             <div className="mt-4 flex h-32 items-end justify-between gap-2">
               {ins.week.map((d, i) => (
                 <div key={d.dayStart} className="flex flex-1 flex-col items-center gap-2">
@@ -71,7 +70,7 @@ export function InsightsPage() {
             </div>
           </Card>
 
-          <h2 className="mb-3 mt-8 px-1 text-[12px] font-semibold uppercase tracking-[0.14em] text-muted">Recent history</h2>
+          <h2 className="mb-3 mt-8 px-1 text-[13px] font-medium text-muted">Recent history</h2>
           <div className="flex flex-col gap-2">
             {recent.map((s) => (
               <Card key={s.id} className="flex items-center gap-3 p-4">

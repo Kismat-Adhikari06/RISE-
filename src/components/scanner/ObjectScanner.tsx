@@ -146,7 +146,7 @@ export function ObjectScanner({ target, threshold, kicker, onConfirmed, onEmerge
       <div className="relative z-10 flex h-full flex-col px-5 pb-safe pt-safe">
         <div className="flex items-start justify-between pt-4">
           <div>
-            <p className="text-[12px] font-semibold tracking-[0.18em] text-accent">{kicker}</p>
+            <p className="text-[13px] font-medium text-muted">{kicker}</p>
             <h1 className="mt-1 text-[32px] font-extrabold leading-tight">Find a {name}.</h1>
             <p className="mt-1 max-w-[300px] text-[14px] text-white/70">Point your camera at a {name} to prove you’re awake.</p>
           </div>
@@ -182,7 +182,7 @@ export function ObjectScanner({ target, threshold, kicker, onConfirmed, onEmerge
               />
             ))}
             {cameraReady && !confirmed && (
-              <div className="scanline absolute inset-x-3 h-[3px] rounded-full bg-accent shadow-[0_0_18px_4px_rgba(196,244,109,0.6)]" />
+              <div className="scanline absolute inset-x-3 h-[3px] rounded-full bg-accent" />
             )}
             {loading && (
               <div className="absolute inset-0 flex items-center justify-center">
@@ -192,7 +192,7 @@ export function ObjectScanner({ target, threshold, kicker, onConfirmed, onEmerge
             <AnimatePresence>
               {confirmed && (
                 <motion.div initial={{ scale: 0.4, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="absolute inset-0 flex items-center justify-center">
-                  <CheckCircle2 size={96} className="text-accent drop-shadow-[0_0_24px_rgba(196,244,109,0.7)]" />
+                  <CheckCircle2 size={96} className="text-accent" />
                 </motion.div>
               )}
             </AnimatePresence>

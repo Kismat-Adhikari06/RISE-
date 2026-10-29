@@ -9,7 +9,7 @@ interface Props extends ButtonHTMLAttributes<HTMLButtonElement> {
 }
 
 const styles: Record<Variant, string> = {
-  primary: 'bg-accent text-black shadow-glow active:brightness-90',
+  primary: 'bg-accent text-black active:brightness-90',
   secondary: 'bg-elevated text-fg hairline active:bg-card',
   ghost: 'bg-transparent text-muted active:text-fg',
   danger: 'bg-danger/15 text-danger border border-danger/30 active:bg-danger/25',

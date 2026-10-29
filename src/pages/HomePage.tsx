@@ -1,6 +1,6 @@
 import { AnimatePresence } from 'motion/react';
 import { motion } from 'motion/react';
-import { AlarmClock, BedDouble, Moon, ShieldAlert, TriangleAlert, X } from 'lucide-react';
+import { TriangleAlert, X } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { AlarmCard } from '../components/alarms/AlarmCard';
 import { Button } from '../components/ui/Button';
@@ -65,10 +65,9 @@ export function HomePage() {
 
   return (
     <div className="px-5 pb-48 pt-safe">
-      <header className="pt-5">
-        <p className="text-[12px] font-semibold tracking-[0.18em] text-accent">{greeting(date)}</p>
-        <h1 className="mt-2 text-[38px] font-extrabold leading-[1.05] tracking-tight">Your mornings,<br />mastered.</h1>
-        <p className="mt-3 text-[14px] text-muted">
+      <header className="pt-6">
+        <h1 className="text-[34px] font-bold leading-tight tracking-tight">{greeting(date)}</h1>
+        <p className="mt-1 text-[15px] text-muted">
           {date.toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' })}
         </p>
       </header>
@@ -105,45 +104,39 @@ export function HomePage() {
         ))}
       </AnimatePresence>
 
-      {/* Hero */}
-      <motion.div
-        initial={{ opacity: 0, y: 12 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="relative mt-6 overflow-hidden rounded-[32px] p-6 hairline shadow-soft"
-        style={{ background: 'radial-gradient(120% 120% at 100% 0%, rgba(196,244,109,0.20) 0%, rgba(24,24,27,1) 55%)' }}
-      >
-        <p className="text-[12px] font-semibold tracking-[0.18em] text-accent">NEXT ALARM</p>
+      <section className="mt-7 rounded-2xl bg-card p-6 hairline" aria-label="Next alarm">
         {next ? (
           <>
-            <div className="mt-3 flex items-baseline gap-2">
-              <span className="tnum text-[64px] font-extrabold leading-none tracking-tight">
+            <p className="text-[15px] text-muted">Next alarm</p>
+            <div className="mt-2 flex items-baseline gap-2">
+              <span className="tnum text-[56px] font-bold leading-none tracking-tight">
                 {formatTime(next.hour, next.minute, format).main}
               </span>
-              <span className="text-[22px] font-semibold text-muted">{formatTime(next.hour, next.minute, format).suffix}</span>
+              <span className="text-[20px] font-semibold text-muted">{formatTime(next.hour, next.minute, format).suffix}</span>
             </div>
-            <p className="mt-2 text-[16px] font-medium">{describeDay(next.nextOccurrence as number, now)}</p>
-            <p className="mt-1 text-[14px] text-muted">
-              Ringing in <span className="tnum font-semibold text-accent">{formatCountdown((next.nextOccurrence as number) - now)}</span>
+            <p className="mt-2 text-[15px] text-muted">
+              {describeDay(next.nextOccurrence as number, now)} ·{' '}
+              <span className="tnum">{formatCountdown((next.nextOccurrence as number) - now)}</span>
             </p>
-            <p className="mt-4 text-[14px] italic text-muted">Rise and shine.</p>
+            <Button variant="secondary" className="mt-4 !min-h-[44px]" onClick={() => open({ name: 'nightstand' })}>
+              Nightstand mode
+            </Button>
           </>
         ) : (
           <>
-            <p className="mt-3 text-[34px] font-extrabold leading-tight">Nothing scheduled</p>
-            <p className="mt-2 text-[14px] text-muted">Turn on an alarm or create a new one to see it here.</p>
+            <p className="text-[15px] text-muted">No alarms set</p>
+            <p className="mt-1 text-[15px]">Pick a time and a mission below.</p>
+            <Button variant="secondary" className="mt-4 !min-h-[44px]" onClick={() => open({ name: 'nightstand' })}>
+              Nightstand mode
+            </Button>
           </>
         )}
-        <Button variant="secondary" className="mt-5 !min-h-[44px]" icon={<Moon size={18} />} onClick={() => open({ name: 'nightstand' })}>
-          Nightstand mode
-        </Button>
-      </motion.div>
+      </section>
 
       {!noteHidden && (
-        <div className="mt-4 flex gap-3 rounded-2xl bg-card p-4 hairline">
-          <ShieldAlert size={20} className="mt-0.5 shrink-0 text-accent" />
-          <p className="flex-1 text-[13px] leading-relaxed text-muted">
-            <span className="font-semibold text-fg">Heads up:</span> RISE is a web app. Alarms only ring while this page is open and your phone is awake, so
-            use Nightstand mode and keep a regular phone alarm as a backup.
+        <div className="mt-3 flex gap-3 rounded-2xl px-1 py-3 text-[13px] leading-relaxed text-muted" role="note">
+          <p className="flex-1">
+            Alarms only ring while this page is open. Keep the app in Nightstand mode, and keep a regular phone alarm as a backup.
           </p>
           <button type="button" aria-label="Dismiss" onClick={dismissNote} className="-m-2 h-fit p-2 text-muted">
             <X size={18} />
@@ -151,42 +144,37 @@ export function HomePage() {
         </div>
       )}
 
-      <h2 className="mb-3 mt-8 px-1 text-[12px] font-semibold uppercase tracking-[0.14em] text-muted">Your alarms</h2>
-
-      {sorted.length === 0 ? (
-        <div className="flex flex-col items-center rounded-[32px] bg-card px-6 py-12 text-center hairline">
-          <div className="flex h-20 w-20 items-center justify-center rounded-full bg-accent/10 text-accent">
-            <BedDouble size={36} />
+      <section className="mt-8" aria-label="Your alarms">
+        {sorted.length === 0 ? (
+          <div className="flex flex-col items-center rounded-2xl bg-card px-6 py-12 text-center hairline">
+            <p className="text-[17px] font-semibold">No alarms yet</p>
+            <p className="mt-2 max-w-[260px] text-[14px] leading-relaxed text-muted">
+              Create one and add a math or object-scan mission to make waking up count.
+            </p>
+            <div className="mt-6 flex flex-col gap-2">
+              <Button onClick={() => open({ name: 'editor', alarmId: null })}>Create an alarm</Button>
+              <Button variant="ghost" onClick={quick}>
+                Set a test alarm for 1 minute from now
+              </Button>
+            </div>
           </div>
-          <h3 className="mt-5 text-[22px] font-bold">No alarms yet</h3>
-          <p className="mt-2 max-w-[260px] text-[14px] leading-relaxed text-muted">
-            Create your first alarm and add a math or object-scan mission to make waking up count.
-          </p>
-          <div className="mt-6 flex flex-col gap-3">
-            <Button icon={<AlarmClock size={18} />} onClick={() => open({ name: 'editor', alarmId: null })}>
-              Create an alarm
-            </Button>
-            <Button variant="ghost" onClick={quick}>
-              Set a test alarm for 1 minute from now
-            </Button>
+        ) : (
+          <div className="flex flex-col gap-3">
+            <AnimatePresence initial={false}>
+              {sorted.map((a, i) => (
+                <AlarmCard
+                  key={a.id}
+                  alarm={a}
+                  format={format}
+                  index={i}
+                  onOpen={() => open({ name: 'editor', alarmId: a.id })}
+                  onToggle={(v) => void setEnabled(a.id, v)}
+                />
+              ))}
+            </AnimatePresence>
           </div>
-        </div>
-      ) : (
-        <div className="flex flex-col gap-3">
-          <AnimatePresence initial={false}>
-            {sorted.map((a, i) => (
-              <AlarmCard
-                key={a.id}
-                alarm={a}
-                format={format}
-                index={i}
-                onOpen={() => open({ name: 'editor', alarmId: a.id })}
-                onToggle={(v) => void setEnabled(a.id, v)}
-              />
-            ))}
-          </AnimatePresence>
-        </div>
-      )}
+        )}
+      </section>
     </div>
   );
 }

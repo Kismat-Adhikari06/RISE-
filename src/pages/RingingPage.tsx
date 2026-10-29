@@ -25,7 +25,7 @@ export function RingingPage({ session }: { session: AlarmSession }) {
       <motion.div
         aria-hidden
         className="pointer-events-none absolute left-1/2 top-[34%] h-[520px] w-[520px] -translate-x-1/2 -translate-y-1/2 rounded-full"
-        style={{ background: 'radial-gradient(circle, rgba(196,244,109,0.22) 0%, rgba(196,244,109,0) 65%)' }}
+        style={{ background: 'radial-gradient(circle, rgba(165,180,252,0.12) 0%, rgba(165,180,252,0) 65%)' }}
         animate={{ scale: [1, 1.12, 1], opacity: [0.8, 1, 0.8] }}
         transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
       />
@@ -41,7 +41,7 @@ export function RingingPage({ session }: { session: AlarmSession }) {
           <span className="ringpulse absolute inset-0 rounded-full border border-accent/60" />
           <span className="ringpulse absolute inset-0 rounded-full border border-accent/40" style={{ animationDelay: '1.2s' }} />
           <div className="flex h-[250px] w-[250px] flex-col items-center justify-center rounded-full bg-card/80 hairline shadow-glow">
-            <span className="tnum text-[68px] font-extrabold leading-none text-accent drop-shadow-[0_0_24px_rgba(196,244,109,0.55)]">{main}</span>
+            <span className="tnum text-[68px] font-extrabold leading-none text-accent">{main}</span>
             {suffix && <span className="mt-1 text-[20px] font-semibold text-accent/80">{suffix}</span>}
           </div>
         </div>

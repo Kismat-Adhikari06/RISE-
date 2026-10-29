@@ -86,7 +86,7 @@ export function MathChallenge({ kicker, title, run, onCorrect, onComplete }: Pro
   return (
     <div className="flex h-full flex-col px-5 pb-safe pt-safe">
       <div className="pt-4">
-        <p className="text-[12px] font-semibold tracking-[0.18em] text-accent">{kicker}</p>
+        <p className="text-[13px] font-medium text-muted">{kicker}</p>
         <h1 className="mt-1 text-[30px] font-extrabold leading-tight">{title}</h1>
         <div className="mt-4 flex items-center gap-3">
           <div className="flex flex-1 gap-1.5" aria-hidden>
